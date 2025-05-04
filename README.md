@@ -2,7 +2,7 @@
 
 A modern, responsive website for a fashion-forward clothing brand. Built to reflect the style, story, and identity of the brand while offering an immersive shopping experience.
 
-![screenshot](preview.png) <!-- Optional: Add a real preview image -->
+![screenshot](./public/abl.png) 
 
 ---
 
