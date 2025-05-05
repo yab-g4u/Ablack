@@ -18,10 +18,10 @@ export default function MarqueeBanner({ className }: MarqueeBannerProps) {
       const textContent = textRef.current.innerHTML
       textRef.current.innerHTML = textContent + textContent
 
-      // GSAP animation for smooth scrolling
+      // GSAP animation for smooth scrolling - slowed down from 40 to 80
       gsap.to(textRef.current, {
         x: "-50%",
-        duration: 40, // Changed from 20 to 40 to slow down the animation
+        duration: 80, // Changed from 40 to 80 to slow down the animation even more
         ease: "none",
         repeat: -1,
       })

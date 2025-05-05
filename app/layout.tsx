@@ -6,7 +6,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import Script from "next/script"
-import AuthProvider from "@/components/auth-provider"
+import AuthProvider from "@/lib/auth-context"
 
 const inter = Inter({ subsets: ["latin"] })
 

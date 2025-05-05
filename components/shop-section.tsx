@@ -90,19 +90,28 @@ export default function ShopSection({ className }: ShopSectionProps) {
   const productsRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    // Filter products based on category, price range, and search query
-    const filtered = products.filter((product) => {
-      const matchesCategory = activeCategory === "all" || product.category === activeCategory
-      const price = Number.parseInt(product.price.replace("$", ""))
-      const matchesPrice = price >= priceRange[0] && price <= priceRange[1]
-      const matchesSearch =
-        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.description.toLowerCase().includes(searchQuery.toLowerCase())
+    const fetchProducts = async () => {
+      try {
+        // In a real app, this would fetch from the server
+        // For now, we'll use the static products array
+        setFilteredProducts(
+          products.filter((product) => {
+            const matchesCategory = activeCategory === "all" || product.category === activeCategory
+            const price = Number.parseInt(product.price.replace("$", ""))
+            const matchesPrice = price >= priceRange[0] && price <= priceRange[1]
+            const matchesSearch =
+              product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              product.description.toLowerCase().includes(searchQuery.toLowerCase())
 
-      return matchesCategory && matchesPrice && matchesSearch
-    })
+            return matchesCategory && matchesPrice && matchesSearch
+          }),
+        )
+      } catch (error) {
+        console.error("Error fetching products:", error)
+      }
+    }
 
-    setFilteredProducts(filtered)
+    fetchProducts()
   }, [activeCategory, priceRange, searchQuery])
 
   useEffect(() => {
@@ -268,16 +277,11 @@ export default function ShopSection({ className }: ShopSectionProps) {
           ) : (
             <div className="col-span-full text-center py-12">
               <p className="text-xl text-gray-400">No products found matching your criteria.</p>
-              <Button
-                variant="link"
-                onClick={() => {
-                  setActiveCategory("all")
-                  setPriceRange([100, 500])
-                  setSearchQuery("")
-                }}
-              >
-                Reset Filters
-              </Button>
+              <Link href="/shop">
+                <Button size="lg" variant="outline" className="text-lg px-8">
+                  View All Products
+                </Button>
+              </Link>
             </div>
           )}
         </div>

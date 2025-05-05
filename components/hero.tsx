@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils"
 import Image from "next/image"
 import gsap from "gsap"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
+import Link from "next/link"
 
 interface HeroProps {
   className?: string
@@ -78,12 +79,16 @@ export default function Hero({ className }: HeroProps) {
         </div>
 
         <div ref={buttonRef} className="mt-10 flex flex-col sm:flex-row gap-4">
-          <Button size="lg" className="text-lg px-8 py-6">
-            Shop Collection
-          </Button>
-          <Button variant="outline" size="lg" className="text-lg px-8 py-6">
-            Explore Brand
-          </Button>
+          <Link href="/shop">
+            <Button size="lg" className="text-lg px-8 py-6">
+              Shop Collection
+            </Button>
+          </Link>
+          <Link href="/about">
+            <Button variant="outline" size="lg" className="text-lg px-8 py-6">
+              Explore Brand
+            </Button>
+          </Link>
         </div>
       </div>
     </section>

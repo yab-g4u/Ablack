@@ -58,6 +58,13 @@
   }
 }
 
+/* Add these styles to fix horizontal scrollbar issues */
+html,
+body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
 .hero-image {
   clip-path: polygon(0 0, 100% 0, 100% 85%, 0 100%);
 }
@@ -115,6 +122,7 @@
   animation: marquee 20s linear infinite;
 }
 
+/* Update the marquee animation to be smoother */
 @keyframes marquee {
   0% {
     transform: translateX(0);
@@ -152,4 +160,33 @@
 .collection-item:hover .overlay {
   transform: translateY(0);
   opacity: 1;
+}
+
+/* Make sure all components have proper spacing */
+section {
+  position: relative;
+  width: 100%;
+}
+
+/* Ensure proper container sizing */
+.container {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 640px) {
+  .container {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
 }

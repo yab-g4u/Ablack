@@ -10,9 +10,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Mail, Lock, User, Eye, EyeOff } from "lucide-react"
+import { Mail, Lock, User, Eye, EyeOff, AlertCircle } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
 import Image from "next/image"
 import gsap from "gsap"
+import { useAuth } from "@/lib/auth-context"
 
 interface AuthModalProps {
   isOpen: boolean
@@ -23,6 +25,8 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const [activeTab, setActiveTab] = useState<"login" | "signup">("login")
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     login: {
       email: "",
@@ -36,8 +40,10 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
     },
   })
 
+  const { signIn, signUp } = useAuth()
   const router = useRouter()
   const contentRef = useRef<HTMLDivElement>(null)
+  const { toast } = useToast()
 
   useEffect(() => {
     if (isOpen && contentRef.current) {
@@ -53,26 +59,62 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         [field]: value,
       },
     })
+    setError(null)
   }
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Here you would integrate with Supabase auth
-    console.log("Login with:", formData.login)
+    setIsLoading(true)
+    setError(null)
 
-    // For now, just close the modal and simulate successful login
-    localStorage.setItem("isAuthenticated", "true")
-    onClose()
+    try {
+      const { error } = await signIn(formData.login.email, formData.login.password)
+
+      if (error) {
+        setError(error.message)
+      } else {
+        toast({
+          title: "Success",
+          description: "You have been signed in successfully.",
+        })
+        onClose()
+      }
+    } catch (err: any) {
+      setError(err.message || "An error occurred during sign in")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Here you would integrate with Supabase auth
-    console.log("Signup with:", formData.signup)
+    setIsLoading(true)
+    setError(null)
 
-    // For now, just close the modal and simulate successful signup
-    localStorage.setItem("isAuthenticated", "true")
-    onClose()
+    // Validate passwords match
+    if (formData.signup.password !== formData.signup.confirmPassword) {
+      setError("Passwords do not match")
+      setIsLoading(false)
+      return
+    }
+
+    try {
+      const { error } = await signUp(formData.signup.email, formData.signup.password, formData.signup.name)
+
+      if (error) {
+        setError(error.message)
+      } else {
+        toast({
+          title: "Account created",
+          description: "Your account has been created successfully.",
+        })
+        onClose()
+      }
+    } catch (err: any) {
+      setError(err.message || "An error occurred during sign up")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleFullAuth = () => {
@@ -98,6 +140,13 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
               <TabsTrigger value="signup">Create Account</TabsTrigger>
             </TabsList>
 
+            {error && (
+              <div className="mx-6 mb-4 p-3 bg-red-900/30 border border-red-800 rounded-md flex items-center gap-2 text-red-400">
+                <AlertCircle size={16} />
+                <span className="text-sm">{error}</span>
+              </div>
+            )}
+
             <TabsContent value="login" className="px-6 pb-6">
               <form onSubmit={handleLogin}>
                 <div className="space-y-4">
@@ -113,6 +162,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                         value={formData.login.email}
                         onChange={(e) => handleChange("login", "email", e.target.value)}
                         required
+                        disabled={isLoading}
                       />
                     </div>
                   </div>
@@ -129,6 +179,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                         value={formData.login.password}
                         onChange={(e) => handleChange("login", "password", e.target.value)}
                         required
+                        disabled={isLoading}
                       />
                       <Button
                         type="button"
@@ -136,6 +187,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                         size="icon"
                         className="absolute right-2 top-1/2 transform -translate-y-1/2"
                         onClick={() => setShowPassword(!showPassword)}
+                        disabled={isLoading}
                       >
                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </Button>
@@ -144,7 +196,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                      <Checkbox id="remember" />
+                      <Checkbox id="remember" disabled={isLoading} />
                       <Label htmlFor="remember" className="text-sm font-normal">
                         Remember me
                       </Label>
@@ -153,13 +205,14 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                       variant="link"
                       className="text-sm p-0 h-auto"
                       onClick={() => router.push("/forgot-password")}
+                      disabled={isLoading}
                     >
                       Forgot password?
                     </Button>
                   </div>
 
-                  <Button type="submit" className="w-full">
-                    Sign In
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? "Signing in..." : "Sign In"}
                   </Button>
                 </div>
               </form>
@@ -180,6 +233,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                         value={formData.signup.name}
                         onChange={(e) => handleChange("signup", "name", e.target.value)}
                         required
+                        disabled={isLoading}
                       />
                     </div>
                   </div>
@@ -196,6 +250,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                         value={formData.signup.email}
                         onChange={(e) => handleChange("signup", "email", e.target.value)}
                         required
+                        disabled={isLoading}
                       />
                     </div>
                   </div>
@@ -212,6 +267,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                         value={formData.signup.password}
                         onChange={(e) => handleChange("signup", "password", e.target.value)}
                         required
+                        disabled={isLoading}
                       />
                       <Button
                         type="button"
@@ -219,6 +275,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                         size="icon"
                         className="absolute right-2 top-1/2 transform -translate-y-1/2"
                         onClick={() => setShowPassword(!showPassword)}
+                        disabled={isLoading}
                       >
                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </Button>
@@ -237,6 +294,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                         value={formData.signup.confirmPassword}
                         onChange={(e) => handleChange("signup", "confirmPassword", e.target.value)}
                         required
+                        disabled={isLoading}
                       />
                       <Button
                         type="button"
@@ -244,6 +302,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                         size="icon"
                         className="absolute right-2 top-1/2 transform -translate-y-1/2"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        disabled={isLoading}
                       >
                         {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </Button>
@@ -251,14 +310,14 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                   </div>
 
                   <div className="flex items-center space-x-2">
-                    <Checkbox id="terms" required />
+                    <Checkbox id="terms" required disabled={isLoading} />
                     <Label htmlFor="terms" className="text-sm font-normal">
                       I agree to the Terms of Service and Privacy Policy
                     </Label>
                   </div>
 
-                  <Button type="submit" className="w-full">
-                    Create Account
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? "Creating Account..." : "Create Account"}
                   </Button>
                 </div>
               </form>
@@ -271,7 +330,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 ? "Need more options? Go to the full sign in page."
                 : "Want more options? Go to the full sign up page."}
             </p>
-            <Button variant="outline" onClick={handleFullAuth}>
+            <Button variant="outline" onClick={handleFullAuth} disabled={isLoading}>
               {activeTab === "login" ? "Full Sign In Page" : "Full Sign Up Page"}
             </Button>
           </div>

@@ -92,7 +92,7 @@ export default function Cart({ className }: CartProps) {
         })
 
         // Animate cart panel
-        gsap.fromTo(cartRef.current, { x: "100%" }, { x: "0%", duration: 0.5, ease: "power3.out" })
+        gsap.fromTo(cartRef.current, { x: "100%" }, { x: "0%", duration: 0.4, ease: "power3.out" })
 
         // Prevent body scroll
         document.body.style.overflow = "hidden"
@@ -107,7 +107,7 @@ export default function Cart({ className }: CartProps) {
         // Animate cart panel
         gsap.to(cartRef.current, {
           x: "100%",
-          duration: 0.5,
+          duration: 0.4,
           ease: "power3.in",
         })
 
@@ -127,6 +127,17 @@ export default function Cart({ className }: CartProps) {
       )
     }
   }, [isOpen, cartItems.length])
+
+  const handleCheckout = () => {
+    if (cartItems.length === 0) return
+
+    // Save cart items to localStorage for checkout page
+    localStorage.setItem("checkoutItems", JSON.stringify(cartItems))
+
+    // Close cart and navigate to checkout
+    toggleCart()
+    window.location.href = "/checkout"
+  }
 
   return (
     <>
@@ -241,7 +252,9 @@ export default function Cart({ className }: CartProps) {
                 <span className="text-gray-400">Shipping</span>
                 <span className="font-semibold">Calculated at checkout</span>
               </div>
-              <Button className="w-full py-6 text-lg">Checkout</Button>
+              <Button className="w-full py-6 text-lg" onClick={handleCheckout}>
+                Proceed to Checkout
+              </Button>
               <Button variant="link" className="w-full mt-2" onClick={toggleCart}>
                 Continue Shopping
               </Button>

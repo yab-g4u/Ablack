@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useEffect, useRef } from "react"
 import Link from "next/link"
 import Image from "next/image"
@@ -8,15 +10,27 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft, Mail, Lock, Eye, EyeOff } from "lucide-react"
+import { ArrowLeft, Mail, Lock, Eye, EyeOff, AlertCircle } from "lucide-react"
 import gsap from "gsap"
 import { useState } from "react"
+import { useAuth } from "@/lib/auth-context"
+import { useRouter } from "next/navigation"
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const pageRef = useRef<HTMLDivElement>(null)
   const formRef = useRef<HTMLDivElement>(null)
   const imageRef = useRef<HTMLDivElement>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const { signIn } = useAuth()
+  const router = useRouter()
+  const [formData, setFormData] = useState({
+    login: {
+      email: "",
+      password: "",
+    },
+  })
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -44,6 +58,35 @@ export default function LoginPage() {
         )
     }
   }, [])
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const { error } = await signIn(formData.login.email, formData.login.password)
+
+      if (error) {
+        setError(error.message)
+      } else {
+        router.push("/")
+      }
+    } catch (err: any) {
+      setError(err.message || "An error occurred during sign in")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      login: {
+        ...formData.login,
+        [e.target.id]: e.target.value,
+      },
+    })
+  }
 
   return (
     <div ref={pageRef} className="min-h-screen w-full flex flex-col md:flex-row">
@@ -77,46 +120,63 @@ export default function LoginPage() {
               <CardDescription>Enter your credentials to access your account</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-2 form-element">
-                <Label htmlFor="email">Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                  <Input id="email" type="email" placeholder="your@email.com" className="pl-10" />
+              <form onSubmit={handleLogin}>
+                {error && (
+                  <div className="mb-4 p-3 bg-red-900/30 border border-red-800 rounded-md flex items-center gap-2 text-red-400">
+                    <AlertCircle size={16} />
+                    <span className="text-sm">{error}</span>
+                  </div>
+                )}
+                <div className="space-y-2 form-element">
+                  <Label htmlFor="email">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="your@email.com"
+                      className="pl-10"
+                      onChange={handleChange}
+                    />
+                  </div>
                 </div>
-              </div>
-              <div className="space-y-2 form-element">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    className="pl-10"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </Button>
+                <div className="space-y-2 form-element">
+                  <Label htmlFor="password">Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      className="pl-10"
+                      onChange={handleChange}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </Button>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center justify-between form-element">
-                <div className="flex items-center space-x-2">
-                  <Checkbox id="remember" />
-                  <Label htmlFor="remember" className="text-sm font-normal">
-                    Remember me
-                  </Label>
+                <div className="flex items-center justify-between form-element">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox id="remember" />
+                    <Label htmlFor="remember" className="text-sm font-normal">
+                      Remember me
+                    </Label>
+                  </div>
+                  <Link href="/forgot-password" className="text-sm text-gray-400 hover:text-white transition-colors">
+                    Forgot password?
+                  </Link>
                 </div>
-                <Link href="/forgot-password" className="text-sm text-gray-400 hover:text-white transition-colors">
-                  Forgot password?
-                </Link>
-              </div>
-              <Button className="w-full py-6 form-element">Sign In</Button>
+                <Button className="w-full py-6 form-element" type="submit" disabled={isLoading}>
+                  {isLoading ? "Signing in..." : "Sign In"}
+                </Button>
+              </form>
             </CardContent>
             <CardFooter className="flex flex-col space-y-4 form-element">
               <div className="text-center text-sm text-gray-400">

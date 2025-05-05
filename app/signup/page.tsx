@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
@@ -8,8 +10,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft, User, Mail, Lock, Eye, EyeOff } from "lucide-react"
+import { ArrowLeft, User, Mail, Lock, Eye, EyeOff, AlertCircle } from "lucide-react"
 import gsap from "gsap"
+import { useAuth } from "@/lib/auth-context"
+import { useRouter } from "next/navigation"
 
 export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -17,6 +21,21 @@ export default function SignupPage() {
   const pageRef = useRef<HTMLDivElement>(null)
   const formRef = useRef<HTMLDivElement>(null)
   const imageRef = useRef<HTMLDivElement>(null)
+
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const { signUp } = useAuth()
+  const router = useRouter()
+
+  const [formData, setFormData] = useState({
+    signup: {
+      name: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+      terms: false,
+    },
+  })
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -45,6 +64,44 @@ export default function SignupPage() {
     }
   }, [])
 
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+    setError(null)
+
+    // Validate passwords match
+    if (formData.signup.password !== formData.signup.confirmPassword) {
+      setError("Passwords do not match")
+      setIsLoading(false)
+      return
+    }
+
+    try {
+      const { error } = await signUp(formData.signup.email, formData.signup.password, formData.signup.name)
+
+      if (error) {
+        setError(error.message)
+      } else {
+        router.push("/")
+      }
+    } catch (err: any) {
+      setError(err.message || "An error occurred during sign up")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { id, value, type, checked } = e.target
+
+    setFormData((prev) => ({
+      signup: {
+        ...prev.signup,
+        [id]: type === "checkbox" ? checked : value,
+      },
+    }))
+  }
+
   return (
     <div ref={pageRef} className="min-h-screen w-full flex flex-col md:flex-row">
       {/* Left side - Form */}
@@ -64,76 +121,104 @@ export default function SignupPage() {
               <CardDescription>Sign up to join the ABLACK community</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-2 form-element">
-                <Label htmlFor="name">Full Name</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                  <Input id="name" type="text" placeholder="John Doe" className="pl-10" />
+              <form onSubmit={handleSignup}>
+                {error && (
+                  <div className="mb-4 p-3 bg-red-900/30 border border-red-800 rounded-md flex items-center gap-2 text-red-400">
+                    <AlertCircle size={16} />
+                    <span className="text-sm">{error}</span>
+                  </div>
+                )}
+                <div className="space-y-2 form-element">
+                  <Label htmlFor="name">Full Name</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                    <Input
+                      id="name"
+                      type="text"
+                      placeholder="John Doe"
+                      className="pl-10"
+                      value={formData.signup.name}
+                      onChange={handleChange}
+                    />
+                  </div>
                 </div>
-              </div>
-              <div className="space-y-2 form-element">
-                <Label htmlFor="email">Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                  <Input id="email" type="email" placeholder="your@email.com" className="pl-10" />
+                <div className="space-y-2 form-element">
+                  <Label htmlFor="email">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="your@email.com"
+                      className="pl-10"
+                      value={formData.signup.email}
+                      onChange={handleChange}
+                    />
+                  </div>
                 </div>
-              </div>
-              <div className="space-y-2 form-element">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    className="pl-10"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </Button>
+                <div className="space-y-2 form-element">
+                  <Label htmlFor="password">Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      className="pl-10"
+                      value={formData.signup.password}
+                      onChange={handleChange}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </Button>
+                  </div>
                 </div>
-              </div>
-              <div className="space-y-2 form-element">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                  <Input
-                    id="confirmPassword"
-                    type={showConfirmPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    className="pl-10"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  >
-                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </Button>
+                <div className="space-y-2 form-element">
+                  <Label htmlFor="confirmPassword">Confirm Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                    <Input
+                      id="confirmPassword"
+                      type={showConfirmPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      className="pl-10"
+                      value={formData.signup.confirmPassword}
+                      onChange={handleChange}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    >
+                      {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </Button>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center space-x-2 form-element">
-                <Checkbox id="terms" />
-                <Label htmlFor="terms" className="text-sm font-normal">
-                  I agree to the{" "}
-                  <Link href="/terms" className="text-white hover:underline">
-                    Terms of Service
-                  </Link>{" "}
-                  and{" "}
-                  <Link href="/privacy" className="text-white hover:underline">
-                    Privacy Policy
-                  </Link>
-                </Label>
-              </div>
-              <Button className="w-full py-6 form-element">Create Account</Button>
+                <div className="flex items-center space-x-2 form-element">
+                  <Checkbox id="terms" checked={formData.signup.terms} onChange={handleChange} />
+                  <Label htmlFor="terms" className="text-sm font-normal">
+                    I agree to the{" "}
+                    <Link href="/terms" className="text-white hover:underline">
+                      Terms of Service
+                    </Link>{" "}
+                    and{" "}
+                    <Link href="/privacy" className="text-white hover:underline">
+                      Privacy Policy
+                    </Link>
+                  </Label>
+                </div>
+                <Button className="w-full py-6 form-element" type="submit" disabled={isLoading}>
+                  {isLoading ? "Creating Account..." : "Create Account"}
+                </Button>
+              </form>
             </CardContent>
             <CardFooter className="flex flex-col space-y-4 form-element">
               <div className="text-center text-sm text-gray-400">
