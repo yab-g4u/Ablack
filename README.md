@@ -29,8 +29,8 @@ A modern, responsive website for a fashion-forward clothing brand. Built to refl
 1. Clone the repo:
 
 ```
-git clone https://github.com/your-username/brand-website.git
-cd brand-website
+git clone https://github.com/yab-g4u/Ablack.git
+cd Ablack
 ```
 
 Install dependencies:
